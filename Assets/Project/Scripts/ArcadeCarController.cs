@@ -40,6 +40,10 @@ public class ArcadeCarController : MonoBehaviour
     [SerializeField] private ParticleSystem[] skidEffects = new ParticleSystem[2];
     [SerializeField] private float minSkidVelocity = 10f;
 
+    [Header("Force To Animal")]
+    [SerializeField] private float forceToAnimal = 1000f;
+    [SerializeField] private float torqueToAnimal = 500f;
+
 
     [Header("Car Input")]
     private float moveInput = 0f;
@@ -72,6 +76,12 @@ public class ArcadeCarController : MonoBehaviour
         Movement();
         VFX();
     }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        AnimalCollision(collision);
+    }
+
     #endregion
 
     #region Movement
@@ -149,12 +159,12 @@ public class ArcadeCarController : MonoBehaviour
     private void VFX()
     {
         WheelVFXs();
-        //SkidVFXs();
+        SkidVFXs();
     }
 
     private void SkidVFXs()
     {
-        if (isGrounded && currentLocalVelocity.x > minSkidVelocity)
+        if (isGrounded && Mathf.Abs(currentLocalVelocity.x) > minSkidVelocity)
         {
             ToggleSkidMarks(true);
             ToggleSkidEffects(true);
@@ -170,7 +180,7 @@ public class ArcadeCarController : MonoBehaviour
     {
         foreach(var skidMark in skidMarks)
         {
-            skidMark.enabled = toggle;
+            skidMark.emitting = toggle;
         }
     }
 
@@ -252,5 +262,35 @@ public class ArcadeCarController : MonoBehaviour
             }
         }
     }
+    #endregion
+
+    #region Collision
+
+    private void AnimalCollision(Collision collision)
+    {
+        int animalLayer = LayerMask.NameToLayer("Animal");
+
+        if (collision.gameObject.layer == animalLayer)
+        {
+            ContactPoint contact = collision.contacts[0];
+
+            Vector3 forceDirection = contact.point - transform.position;
+            forceDirection = forceDirection.normalized;
+            Rigidbody rb = collision.gameObject.GetComponent<Rigidbody>();
+
+            if (rb != null)
+            {
+                rb.AddForce(forceDirection * forceToAnimal, ForceMode.Impulse);
+                Vector3 randomTorque = new Vector3(
+                    Random.Range(-1f, 1f),
+                    Random.Range(-1f, 1f),
+                    Random.Range(-1f, 1f)
+                ).normalized;
+
+                rb.AddTorque(randomTorque * torqueToAnimal, ForceMode.Impulse);
+            }
+        }
+    }
+
     #endregion
 }

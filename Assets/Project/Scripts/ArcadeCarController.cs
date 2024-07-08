@@ -1,6 +1,7 @@
-using System.Data.SqlTypes;
 using UnityEngine;
 using UnityEngine.InputSystem;
+
+   [RequireComponent(typeof(PlayerInput))]
 
 public class ArcadeCarController : MonoBehaviour
 {
@@ -32,6 +33,9 @@ public class ArcadeCarController : MonoBehaviour
     [SerializeField] private float steerStrength = 15f;
     [SerializeField] private AnimationCurve turnCurve;
     [SerializeField] private float dragCoefficient = 1f;
+    [SerializeField] private float additionalGravity = 1.0f;
+    //[SerializeField] private float brakingDeceleration = 100f;
+    //[SerializeField] private float brakingDragCoefficient = 0.5f;
 
     [Header("VFX")]
     [SerializeField] private float wheelRotationSpeed = 3000f;
@@ -41,8 +45,8 @@ public class ArcadeCarController : MonoBehaviour
     [SerializeField] private float minSkidVelocity = 10f;
 
     [Header("Force To Animal")]
-    [SerializeField] private float forceToAnimal = 1000f;
-    [SerializeField] private float torqueToAnimal = 500f;
+    [SerializeField] private float forceToAnimal = 10f;
+    [SerializeField] private float torqueToAnimal = 5f;
 
 
     [Header("Car Input")]
@@ -56,12 +60,17 @@ public class ArcadeCarController : MonoBehaviour
     private float currentSteerAngle = 0.0f;
     private Vector3 wheelEulerAngles = Vector3.zero;
 
+    private PlayerInput _playerInput;
+    private CarInputs _carInputs;
+
     #region Unity
 
     private void Start()
     {
         // 인스펙터에서 넣어주는데, 혹시 까먹을까봐 안전장치용
         carRigidBody = GetComponent<Rigidbody>();
+        _playerInput = GetComponent<PlayerInput>();
+        _carInputs = GetComponent<CarInputs>();
     }
 
     private void Update()
@@ -94,16 +103,23 @@ public class ArcadeCarController : MonoBehaviour
             Turn();
             SidewaysDrag();
         }
+        else
+        {
+            //ApplyAdditionalGravity();
+        }
     }
 
     private void Acceleration()
     {
-        carRigidBody.AddForceAtPosition(accelerationVal * moveInput * ProjectOnGround(transform.forward), accelerationPoint.position, ForceMode.Acceleration);
+        if(currentLocalVelocity.z < maxSpeed)
+        {
+            carRigidBody.AddForceAtPosition(accelerationVal * moveInput * ProjectOnGround(transform.forward), accelerationPoint.position, ForceMode.Acceleration);
+        }
     }
 
     private void Deceleration()
     {
-        carRigidBody.AddForceAtPosition(decelerationVal * moveInput * -ProjectOnGround(transform.forward), accelerationPoint.position, ForceMode.Acceleration);
+        carRigidBody.AddForceAtPosition(decelerationVal * Mathf.Abs(velocityRatio) * -ProjectOnGround(transform.forward), accelerationPoint.position, ForceMode.Acceleration);
     }
 
     private void Turn()
@@ -128,15 +144,21 @@ public class ArcadeCarController : MonoBehaviour
 
     private void GetCarInput()
     {
-        moveInput = Input.GetAxis("Vertical");
-        steerInput = Input.GetAxis("Horizontal");
+        moveInput = _carInputs.Move.y;
+        steerInput = _carInputs.Move.x;
     }
 
     private void CalculateVelocity()
     {
         currentLocalVelocity = transform.InverseTransformDirection(carRigidBody.linearVelocity);
         velocityRatio = currentLocalVelocity.z / maxSpeed;
-        //Debug.Log(currentLocalVelocity.z * 3.6f + "km/h");
+        Debug.Log(currentLocalVelocity.z * 3.6f + "km/h");
+    }
+
+    private void ApplyAdditionalGravity()
+    {
+        Vector3 additionalGravityForce = Vector3.down * additionalGravity * carRigidBody.mass;
+        carRigidBody.AddForce(additionalGravityForce, ForceMode.Acceleration);
     }
 
     #endregion
@@ -164,7 +186,7 @@ public class ArcadeCarController : MonoBehaviour
 
     private void SkidVFXs()
     {
-        if (isGrounded && Mathf.Abs(currentLocalVelocity.x) > minSkidVelocity)
+        if (isGrounded && Mathf.Abs(currentLocalVelocity.x) > minSkidVelocity && velocityRatio > 0)
         {
             ToggleSkidMarks(true);
             ToggleSkidEffects(true);
@@ -280,14 +302,14 @@ public class ArcadeCarController : MonoBehaviour
 
             if (rb != null)
             {
-                rb.AddForce(forceDirection * forceToAnimal, ForceMode.Impulse);
+                rb.AddForce(forceDirection * forceToAnimal * currentLocalVelocity.z, ForceMode.Impulse);
                 Vector3 randomTorque = new Vector3(
                     Random.Range(-1f, 1f),
                     Random.Range(-1f, 1f),
                     Random.Range(-1f, 1f)
                 ).normalized;
 
-                rb.AddTorque(randomTorque * torqueToAnimal, ForceMode.Impulse);
+                rb.AddTorque(randomTorque * torqueToAnimal * currentLocalVelocity.z, ForceMode.Impulse);
             }
         }
     }

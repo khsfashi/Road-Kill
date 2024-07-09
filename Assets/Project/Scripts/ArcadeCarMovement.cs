@@ -105,13 +105,15 @@ public class ArcadeCarMovement : Movement
     {
         if (_currentLocalVelocity.z < _maxSpeed)
         {
-            carRigidBody.AddForceAtPosition(_accelerationVal * _moveInput * ProjectOnGround(transform.forward), accelerationPoint.position, ForceMode.Acceleration);
+            carRigidBody.AddForceAtPosition(0.9f *_accelerationVal * _moveInput * ProjectOnGround(transform.forward), accelerationPoint.position, ForceMode.Acceleration);
+            carRigidBody.AddForceAtPosition(0.1f * _moveInput * (accelerationPoint.forward), accelerationPoint.position, ForceMode.Acceleration);
         }
     }
 
     private void Deceleration()
     {
-        carRigidBody.AddForceAtPosition(_decelerationVal * Mathf.Abs(_velocityRatio) * -ProjectOnGround(transform.forward), accelerationPoint.position, ForceMode.Acceleration);
+        carRigidBody.AddForceAtPosition(0.9f * _decelerationVal * Mathf.Abs(_velocityRatio) * -ProjectOnGround(transform.forward), accelerationPoint.position, ForceMode.Acceleration);
+        carRigidBody.AddForceAtPosition(0.1f * _decelerationVal * Mathf.Abs(_velocityRatio) * -(accelerationPoint.forward), accelerationPoint.position, ForceMode.Acceleration);
     }
 
     private void Turn()

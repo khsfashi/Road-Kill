@@ -1,19 +1,20 @@
 using UnityEngine;
 
-public class Suspension : MonoBehaviour
+public class Suspension
 {
     // Car Info
-    [SerializeField] private Rigidbody carRigidBody;
-    [SerializeField] private Transform[] rayTransforms;
-    [SerializeField] private GameObject[] wheels = new GameObject[4];
-    [SerializeField] private LayerMask movableMask;
-    [SerializeField] private float wheelRadius;
+    private Transform[] _rayTransforms;
+    
+    private GameObject[] _wheels = new GameObject[4];
+    private Rigidbody _carRigidBody;
+    private LayerMask _movableMask;
+    private float _wheelRadius;
 
     // Suspension Physics Setting Values
-    [SerializeField] private float extraLength;
-    [SerializeField] private float carFlexibillity;
-    [SerializeField] private float springStiffness;
-    [SerializeField] private float damperStiffness;
+    private float _extraLength;
+    private float _carFlexibillity;
+    private float _springStiffness;
+    private float _damperStiffness;
 
     // Required Values By Movement Class
     private Vector3 _groundNormal = Vector3.zero;
@@ -22,6 +23,20 @@ public class Suspension : MonoBehaviour
     public Vector3 GroundNormal => _groundNormal;
     public int[] IsGroundedWheels => _isGroundedWheels;
 
+    public Suspension(ArcadeCarMovementSettings settings, Rigidbody rb, GameObject[] wheels, Transform[] rayTransforms)
+    {
+        _carRigidBody = rb;
+        _wheels = wheels;
+        _rayTransforms = rayTransforms;
+
+        _movableMask = settings.movableMask;
+        _wheelRadius = settings.wheelRadius;
+        _extraLength = settings.extraLength;
+        _carFlexibillity = settings.carFlexibillity;
+        _springStiffness = settings.springStiffness;
+        _damperStiffness = settings.damperStiffness;
+    }
+
     private void SetWheelPosition(GameObject wheel, Vector3 wheelPosition)
     {
         wheel.transform.position = wheelPosition;
@@ -29,38 +44,38 @@ public class Suspension : MonoBehaviour
 
     public void CalculateSuspension()
     {
-        for (int i = 0; i < rayTransforms.Length; ++i)
+        for (int i = 0; i < _rayTransforms.Length; ++i)
         {
             RaycastHit hit;
-            float maxLength = extraLength + carFlexibillity;
+            float maxLength = _extraLength + _carFlexibillity;
 
-            if (Physics.Raycast(rayTransforms[i].position, -rayTransforms[i].up, out hit, maxLength + wheelRadius, movableMask))
+            if (Physics.Raycast(_rayTransforms[i].position, -_rayTransforms[i].up, out hit, maxLength + _wheelRadius, _movableMask))
             {
                 _groundNormal = hit.normal;
                 _isGroundedWheels[i] = 1;
-                float curLength = hit.distance - wheelRadius;
-                float compression = (extraLength - curLength) / carFlexibillity;
+                float curLength = hit.distance - _wheelRadius;
+                float compression = (_extraLength - curLength) / _carFlexibillity;
 
-                float springVel = Vector3.Dot(carRigidBody.GetPointVelocity(rayTransforms[i].position), rayTransforms[i].up);
-                float damperForce = damperStiffness * springVel;
+                float springVel = Vector3.Dot(_carRigidBody.GetPointVelocity(_rayTransforms[i].position), _rayTransforms[i].up);
+                float damperForce = _damperStiffness * springVel;
 
-                float springForce = springStiffness * compression;
+                float springForce = _springStiffness * compression;
                 float force = springForce - damperForce;
 
 
-                carRigidBody.AddForceAtPosition(force * rayTransforms[i].up, rayTransforms[i].position);
+                _carRigidBody.AddForceAtPosition(force * _rayTransforms[i].up, _rayTransforms[i].position);
 
-                SetWheelPosition(wheels[i], hit.point + rayTransforms[i].up * wheelRadius);
+                SetWheelPosition(_wheels[i], hit.point + _rayTransforms[i].up * _wheelRadius);
 
-                Debug.DrawLine(rayTransforms[i].position, hit.point, Color.red);
+                Debug.DrawLine(_rayTransforms[i].position, hit.point, Color.red);
             }
             else
             {
                 _isGroundedWheels[i] = 0;
 
-                SetWheelPosition(wheels[i], rayTransforms[i].position - rayTransforms[i].up * maxLength);
+                SetWheelPosition(_wheels[i], _rayTransforms[i].position - _rayTransforms[i].up * maxLength);
 
-                Debug.DrawLine(rayTransforms[i].position, rayTransforms[i].position + (wheelRadius + maxLength) * -rayTransforms[i].up, Color.green);
+                Debug.DrawLine(_rayTransforms[i].position, _rayTransforms[i].position + (_wheelRadius + maxLength) * -_rayTransforms[i].up, Color.green);
             }
         }
     }

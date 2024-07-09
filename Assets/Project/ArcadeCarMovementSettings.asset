@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dbfb0919eadbc614cafe85489264c403, type: 3}
+  m_Name: ArcadeCarMovementSettings
+  m_EditorClassIdentifier: 
+  movableMask:
+    serializedVersion: 2
+    m_Bits: 448
+  wheelRadius: 0.33
+  accelerationVal: 25
+  decelerationVal: 10
+  maxSpeed: 100
+  steerStrength: 30
+  turnCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 2
+      outSlope: 2
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.075324014
+      value: 0.37383533
+      inSlope: 2.154872
+      outSlope: 2.154872
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.50517017
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.6282605
+      value: 1.0009608
+      inSlope: -0.004782466
+      outSlope: -0.004782466
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.5404488
+    - serializedVersion: 3
+      time: 0.9873106
+      value: 0.7522718
+      inSlope: -0.2219943
+      outSlope: -0.2219943
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.6055636
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  dragCoefficient: 1
+  maxSteeringAngle: 30
+  wheelRotationSpeed: 3000
+  extraLength: 0.6
+  carFlexibillity: 0.25
+  springStiffness: 20000
+  damperStiffness: 6000

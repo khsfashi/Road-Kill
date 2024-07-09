@@ -2,26 +2,27 @@ using UnityEngine;
 
 public class ArcadeCarMovement : Movement
 {
-    // Car Info
+    [Header("Car Info")]
     [SerializeField] private Rigidbody carRigidBody;
     [SerializeField] private GameObject[] wheels = new GameObject[4];
     [SerializeField] private GameObject[] frontWheelsParents = new GameObject[2];
+    [SerializeField] private Transform[] rayTransforms = new Transform[4];
+    [SerializeField] private Transform accelerationPoint;
+
+    [Header("Car Movement Setting Data")]
+    [SerializeField] private ArcadeCarMovementSettings settings;
 
     // Speed Physics Setting Values
-    [SerializeField] private Transform accelerationPoint;
-    [SerializeField] private float accelerationVal = 15f;
-    [SerializeField] private float decelerationVal = 10f;
-    [SerializeField] private float maxSpeed = 100f;
-    [SerializeField] private float steerStrength = 15f;
-    [SerializeField] private AnimationCurve turnCurve;
-    [SerializeField] private float dragCoefficient = 1f;
+    private float _accelerationVal = 15f;
+    private float _decelerationVal = 10f;
+    private float _maxSpeed = 100f;
+    private float _steerStrength = 15f;
+    private AnimationCurve _turnCurve;
+    private float _dragCoefficient = 1f;
 
     // Spin Wheel
-    [SerializeField] private float maxSteeringAngle = 30f;
-    [SerializeField] private float wheelRotationSpeed = 3000f;
-
-    // Suspension
-    [SerializeField] private Suspension suspensionCalculator;
+    private float _maxSteeringAngle = 30f;
+    private float _wheelRotationSpeed = 3000f;
 
     // Speed Physics Member Values
     private Vector3 _currentLocalVelocity = Vector3.zero;
@@ -38,6 +39,27 @@ public class ArcadeCarMovement : Movement
     private float _currentSteerAngle = 0.0f;
     private Vector3 _wheelEulerAngles = Vector3.zero;
 
+    // Suspension
+    private Suspension _suspensionCalculator;
+
+    private void Start()
+    {
+        // Insurance
+        carRigidBody = GetComponent<Rigidbody>();
+
+        _suspensionCalculator = new Suspension(settings, carRigidBody, wheels, rayTransforms);
+
+        _accelerationVal = settings.accelerationVal;
+        _decelerationVal = settings.decelerationVal;
+        _maxSpeed = settings.maxSpeed;
+        _steerStrength = settings.steerStrength;
+        _turnCurve = settings.turnCurve;
+        _dragCoefficient = settings.dragCoefficient;
+
+        _maxSteeringAngle = settings.maxSteeringAngle;
+        _wheelRotationSpeed = settings.wheelRotationSpeed;
+    }
+
     public override void UpdateMovement()
     {
         CalculateVelocity();
@@ -53,7 +75,7 @@ public class ArcadeCarMovement : Movement
 
     public override void UpdateMovementState()
     {
-        suspensionCalculator.CalculateSuspension();
+        _suspensionCalculator.CalculateSuspension();
         CheckGrounded();
     }
 
@@ -81,26 +103,26 @@ public class ArcadeCarMovement : Movement
 
     private void Acceleration()
     {
-        if (_currentLocalVelocity.z < maxSpeed)
+        if (_currentLocalVelocity.z < _maxSpeed)
         {
-            carRigidBody.AddForceAtPosition(accelerationVal * _moveInput * ProjectOnGround(transform.forward), accelerationPoint.position, ForceMode.Acceleration);
+            carRigidBody.AddForceAtPosition(_accelerationVal * _moveInput * ProjectOnGround(transform.forward), accelerationPoint.position, ForceMode.Acceleration);
         }
     }
 
     private void Deceleration()
     {
-        carRigidBody.AddForceAtPosition(decelerationVal * Mathf.Abs(_velocityRatio) * -ProjectOnGround(transform.forward), accelerationPoint.position, ForceMode.Acceleration);
+        carRigidBody.AddForceAtPosition(_decelerationVal * Mathf.Abs(_velocityRatio) * -ProjectOnGround(transform.forward), accelerationPoint.position, ForceMode.Acceleration);
     }
 
     private void Turn()
     {
-        carRigidBody.AddTorque(steerStrength * _steerInput * turnCurve.Evaluate(Mathf.Abs(_velocityRatio)) * Mathf.Sign(_velocityRatio) * transform.up, ForceMode.Acceleration);
+        carRigidBody.AddTorque(_steerStrength * _steerInput * _turnCurve.Evaluate(Mathf.Abs(_velocityRatio)) * Mathf.Sign(_velocityRatio) * transform.up, ForceMode.Acceleration);
     }
 
     private void SidewaysDrag()
     {
         float currentSidewaysSpeed = _currentLocalVelocity.x;
-        float dragMagnitude = -currentSidewaysSpeed * dragCoefficient;
+        float dragMagnitude = -currentSidewaysSpeed * _dragCoefficient;
 
         Vector3 dragForce = transform.right * dragMagnitude;
         carRigidBody.AddForceAtPosition(dragForce, carRigidBody.worldCenterOfMass, ForceMode.Acceleration);
@@ -108,7 +130,7 @@ public class ArcadeCarMovement : Movement
 
     private Vector3 ProjectOnGround(Vector3 vector)
     {
-        var groundNormal = suspensionCalculator.GroundNormal;
+        var groundNormal = _suspensionCalculator.GroundNormal;
         Vector3 projected = vector - Vector3.Dot(vector, groundNormal) * groundNormal;
         return projected.normalized;
     }
@@ -116,12 +138,12 @@ public class ArcadeCarMovement : Movement
     private void CalculateVelocity()
     {
         _currentLocalVelocity = transform.InverseTransformDirection(carRigidBody.linearVelocity);
-        _velocityRatio = _currentLocalVelocity.z / maxSpeed;
+        _velocityRatio = _currentLocalVelocity.z / _maxSpeed;
     }
 
     private void CheckGrounded()
     {
-        var isGroundedWheels = suspensionCalculator.IsGroundedWheels;
+        var isGroundedWheels = _suspensionCalculator.IsGroundedWheels;
         int groundedWheels = 0;
         for (int i = 0; i < isGroundedWheels.Length; ++i)
         {
@@ -133,7 +155,7 @@ public class ArcadeCarMovement : Movement
 
     private void SpinWheels()
     {
-        float targetSteeringAngle = maxSteeringAngle * _steerInput;
+        float targetSteeringAngle = _maxSteeringAngle * _steerInput;
         float steerSmoothSpeed = 5.0f;
         _currentSteerAngle = Mathf.Lerp(_currentSteerAngle, targetSteeringAngle, steerSmoothSpeed * Time.deltaTime);
 
@@ -141,7 +163,7 @@ public class ArcadeCarMovement : Movement
         {
             if (i < 2)
             {
-                wheels[i].transform.Rotate(Vector3.right, wheelRotationSpeed * _velocityRatio * Time.deltaTime, Space.Self);
+                wheels[i].transform.Rotate(Vector3.right, _wheelRotationSpeed * _velocityRatio * Time.deltaTime, Space.Self);
                 // 원래 벡터 생성해서 쓰다가 new 매프레임 하는 거 좀 성능 문제 생길 것 같아서 멤버 변수 통해서 바꿈
                 _wheelEulerAngles = frontWheelsParents[i].transform.localEulerAngles;
                 _wheelEulerAngles.y = _currentSteerAngle;
@@ -149,8 +171,8 @@ public class ArcadeCarMovement : Movement
             }
             else
             {
-                wheels[i].transform.Rotate(Vector3.right, wheelRotationSpeed * _moveInput * Time.deltaTime, Space.Self);
-                wheels[i].transform.Rotate(Vector3.right, wheelRotationSpeed * _velocityRatio * Time.deltaTime, Space.Self);
+                wheels[i].transform.Rotate(Vector3.right, _wheelRotationSpeed * _moveInput * Time.deltaTime, Space.Self);
+                wheels[i].transform.Rotate(Vector3.right, _wheelRotationSpeed * _velocityRatio * Time.deltaTime, Space.Self);
             }
         }
     }

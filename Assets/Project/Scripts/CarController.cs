@@ -29,6 +29,7 @@ public class CarController : MonoBehaviour
     private void Update()
     {
         movement.UpdateDirection(_carInputs.Move.x, _carInputs.Move.y, 0.0f);
+        movement.SetSprint(_carInputs.Drift);
     }
 
     private void FixedUpdate()
@@ -46,7 +47,7 @@ public class CarController : MonoBehaviour
     private void UpdateVFXs()
     {
         _currentLocalVelocity = movement.GetLocalVelocity();
-        if (Mathf.Abs(_currentLocalVelocity.x) > minSkidVelocity && movement.CanMove())
+        if (_carInputs.Drift && Mathf.Abs(_currentLocalVelocity.x) > minSkidVelocity && movement.CanMove())
         {
             vfxPlayer.PlayVFX();
         }

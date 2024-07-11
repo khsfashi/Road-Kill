@@ -31,6 +31,7 @@ public class ArcadeCarMovement : Movement
     // Input Values
     private float _moveInput = 0f;
     private float _steerInput = 0f;
+    private bool _isDrift = false;
 
     // Ensure Movable Values
     private bool _isGrounded = false;
@@ -46,7 +47,7 @@ public class ArcadeCarMovement : Movement
     {
         // Insurance
         carRigidBody = GetComponent<Rigidbody>();
-
+        Physics.gravity = new Vector3(0, -19.62f, 0);
         _suspensionCalculator = new Suspension(settings, carRigidBody, wheels, rayTransforms);
 
         _accelerationVal = settings.accelerationVal;
@@ -69,6 +70,7 @@ public class ArcadeCarMovement : Movement
             Deceleration();
             Turn();
             SidewaysDrag();
+            Friction();
         }
         SpinWheels();
     }
@@ -83,6 +85,10 @@ public class ArcadeCarMovement : Movement
     {
         _moveInput = direction.y;
         _steerInput = direction.x;
+    }
+    public override void SetSprint(bool value)
+    {
+        _isDrift = value;
     }
 
     public override void UpdateDirection(float x, float y, float z)
@@ -103,7 +109,7 @@ public class ArcadeCarMovement : Movement
 
     private void Acceleration()
     {
-        if (_currentLocalVelocity.z < _maxSpeed)
+        if (Mathf.Abs(_currentLocalVelocity.z) < _maxSpeed)
         {
             carRigidBody.AddForceAtPosition(0.9f *_accelerationVal * _moveInput * ProjectOnGround(transform.forward), accelerationPoint.position, ForceMode.Acceleration);
             carRigidBody.AddForceAtPosition(0.1f * _moveInput * (accelerationPoint.forward), accelerationPoint.position, ForceMode.Acceleration);
@@ -112,13 +118,31 @@ public class ArcadeCarMovement : Movement
 
     private void Deceleration()
     {
-        carRigidBody.AddForceAtPosition(0.9f * _decelerationVal * Mathf.Abs(_velocityRatio) * -ProjectOnGround(transform.forward), accelerationPoint.position, ForceMode.Acceleration);
-        carRigidBody.AddForceAtPosition(0.1f * _decelerationVal * Mathf.Abs(_velocityRatio) * -(accelerationPoint.forward), accelerationPoint.position, ForceMode.Acceleration);
+        if (Mathf.Abs(_velocityRatio) > 0.001f)
+        {
+            carRigidBody.AddForceAtPosition(0.9f * _decelerationVal * Mathf.Abs(_velocityRatio) * -ProjectOnGround(transform.forward), accelerationPoint.position, ForceMode.Acceleration);
+            carRigidBody.AddForceAtPosition(0.1f * _decelerationVal * Mathf.Abs(_velocityRatio) * -(accelerationPoint.forward), accelerationPoint.position, ForceMode.Acceleration);
+        }
+        else
+        {
+            carRigidBody.linearVelocity = Vector3.zero;
+        }
+    }
+
+    private void Friction()
+    {
+        if(Mathf.RoundToInt(_steerInput) == 0 && (int)_moveInput == 0 && Mathf.Abs(_velocityRatio) > 0.001f)
+        {
+            float frictionCoefficient = 10.0f;
+            Vector3 frictionForce = -ProjectOnGround(carRigidBody.linearVelocity) * frictionCoefficient;
+            carRigidBody.AddForce(frictionForce, ForceMode.Acceleration);
+        }
     }
 
     private void Turn()
     {
-        carRigidBody.AddTorque(_steerStrength * _steerInput * _turnCurve.Evaluate(Mathf.Abs(_velocityRatio)) * Mathf.Sign(_velocityRatio) * transform.up, ForceMode.Acceleration);
+        float adjustedSteerStrength = _isDrift ? _steerStrength * (1.5f + _velocityRatio) : _steerStrength;
+        carRigidBody.AddTorque(adjustedSteerStrength * _steerInput * _turnCurve.Evaluate(Mathf.Abs(_velocityRatio)) * Mathf.Sign(_velocityRatio) * transform.up, ForceMode.Acceleration);
     }
 
     private void SidewaysDrag()
@@ -129,6 +153,7 @@ public class ArcadeCarMovement : Movement
         Vector3 dragForce = transform.right * dragMagnitude;
         carRigidBody.AddForceAtPosition(dragForce, carRigidBody.worldCenterOfMass, ForceMode.Acceleration);
     }
+    
 
     private Vector3 ProjectOnGround(Vector3 vector)
     {
@@ -140,7 +165,7 @@ public class ArcadeCarMovement : Movement
     private void CalculateVelocity()
     {
         _currentLocalVelocity = transform.InverseTransformDirection(carRigidBody.linearVelocity);
-        _velocityRatio = _currentLocalVelocity.z / _maxSpeed;
+        _velocityRatio = Mathf.Abs(_currentLocalVelocity.z / _maxSpeed);
     }
 
     private void CheckGrounded()
@@ -166,7 +191,7 @@ public class ArcadeCarMovement : Movement
             if (i < 2)
             {
                 wheels[i].transform.Rotate(Vector3.right, _wheelRotationSpeed * _velocityRatio * Time.deltaTime, Space.Self);
-                // ¿ø·¡ º¤ÅÍ »ý¼ºÇØ¼­ ¾²´Ù°¡ new ¸ÅÇÁ·¹ÀÓ ÇÏ´Â °Å Á» ¼º´É ¹®Á¦ »ý±æ °Í °°¾Æ¼­ ¸â¹ö º¯¼ö ÅëÇØ¼­ ¹Ù²Þ
+                // ì›ëž˜ ë²¡í„° ìƒì„±í•´ì„œ ì“°ë‹¤ê°€ new ë§¤í”„ë ˆìž„ í•˜ëŠ” ê±° ì¢€ ì„±ëŠ¥ ë¬¸ì œ ìƒê¸¸ ê²ƒ ê°™ì•„ì„œ ë©¤ë²„ ë³€ìˆ˜ í†µí•´ì„œ ë°”ê¿ˆ
                 _wheelEulerAngles = frontWheelsParents[i].transform.localEulerAngles;
                 _wheelEulerAngles.y = _currentSteerAngle;
                 frontWheelsParents[i].transform.localEulerAngles = _wheelEulerAngles;

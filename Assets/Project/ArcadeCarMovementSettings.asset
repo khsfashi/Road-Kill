@@ -15,11 +15,11 @@ MonoBehaviour:
   movableMask:
     serializedVersion: 2
     m_Bits: 448
-  wheelRadius: 0.33
+  wheelRadius: 0.35
   accelerationVal: 25
-  decelerationVal: 10
-  maxSpeed: 100
-  steerStrength: 30
+  decelerationVal: 20
+  maxSpeed: 80
+  steerStrength: 20
   turnCurve:
     serializedVersion: 2
     m_Curve:

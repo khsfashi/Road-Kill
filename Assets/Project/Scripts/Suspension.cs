@@ -65,7 +65,12 @@ public class Suspension
 
                 _carRigidBody.AddForceAtPosition(force * _rayTransforms[i].up, _rayTransforms[i].position);
 
-                SetWheelPosition(_wheels[i], hit.point + _rayTransforms[i].up * _wheelRadius);
+                Vector3 wheelPosition = hit.point + _rayTransforms[i].up * _wheelRadius;
+                if (wheelPosition.y > _rayTransforms[i].position.y - _wheelRadius) 
+                {
+                    wheelPosition.y = _rayTransforms[i].position.y - _wheelRadius;
+                }
+                SetWheelPosition(_wheels[i], wheelPosition);
 
                 Debug.DrawLine(_rayTransforms[i].position, hit.point, Color.red);
             }
